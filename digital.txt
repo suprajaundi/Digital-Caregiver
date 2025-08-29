@@ -1,0 +1,2 @@
+In today’s world, elderly patients and people with multiple prescriptions face significant challenges in managing their daily medications. Forgetting doses, taking the wrong pill, or overdosing can lead to serious health risks. Traditional reminders like alarms or pillboxes are not always effective because they lack safety features, tracking, and caregiver integration.
+To address this problem, we propose the All-in-One Smart Medicine Assistant – a compact, intelligent IoT-based device that not only reminds patients but also ensures safe and accurate medicine intake
