@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Medicine Assistant (Frontend)</title>
+  <style>
+    :root{
+      --primary:#1976d2;
+      --primary-dark:#1565c0;
+      --card-bg:#fff;
+      --muted:#666;
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Arial,sans-serif;
+      background: linear-gradient(90deg,#eaf3ff 0%, #fdf0f6 100%);
+      color:#1b1b1b;
+      padding:24px;
+      min-height:100vh;
+    }
+    header{ text-align:center; margin-bottom:18px;}
+    h1{ margin:0; font-size:26px; letter-spacing:-0.5px;}
+    .app{
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:18px;
+    }
+    .card{
+      background:var(--card-bg);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow: 0 6px 18px rgba(20,30,50,0.06);
+    }
+    .hidden{ display:none !important; }
+    .center{ text-align:center }
+    form input, form button, input[type=file], select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-size:14px;
+    }
+    form{ display:flex; flex-direction:column; gap:10px;}
+    button.primary{
+      background:var(--primary);
+      color:#fff;
+      border:0;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:8px;
+    }
+    button.primary:hover{ background:var(--primary-dark) }
+    .small{ font-size:13px; color:var(--muted) }
+    .schedule-list{ display:flex; flex-direction:column; gap:8px; margin-top:8px;}
+    .med-row{
+      display:flex; gap:8px; align-items:center; justify-content:space-between;
+      border:1px solid #eef3fb; padding:8px; border-radius:8px;
+    }
+    .pill-badge{ background:#f4f9ff; color:var(--primary); padding:6px 8px; border-radius:8px; font-weight:600; }
+    .actions button{ margin-left:6px; }
+    table{ width:100%; border-collapse:collapse; margin-top:8px;}
+    th,td{ padding:8px; border-bottom:1px solid #f2f4f7; text-align:left; font-size:14px;}
+    th{ color:var(--muted); font-weight:600; font-size:13px; }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;}
+    .logout{ background:#f5f5f5; border:1px solid #eee; padding:8px 12px; border-radius:8px; cursor:pointer;}
+    .note{ background:#fff9f0; border-left:4px solid #ffb74d; padding:8px; border-radius:6px; font-size:13px;}
+    .qr-input{ display:flex; gap:8px; align-items:center; }
+    .btn-row{ display:flex; gap:8px; margin-top:10px; }
+    @media(max-width:900px){
+      .app{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+<h1>DIGITAL CAREGIVER</h1>
+    <h1>All-in-One Smart Medicine Assistant</h1>
+    <p class="small">Login → manage schedule → mark Taken/Missed → caretaker notified → history</p>
+  </header>
+
+  <div class="app">
+    <!-- LEFT -->
+    <div class="card" id="leftPanel">
+      <!-- LOGIN -->
+      <div id="loginCard">
+        <h3 class="center">Login</h3>
+        <form id="loginForm">
+          <input id="username" placeholder="Username" required />
+          <input id="password" type="password" placeholder="Password" required />
+          <button class="primary" type="submit">Login</button>
+        </form>
+        <p class="small center">Demo credentials: <strong>user / 1234</strong></p>
+      </div>
+
+      <!-- CONTROLS -->
+      <div id="controlsCard" class="hidden">
+        <div class="topbar">
+          <strong>Account</strong>
+          <button id="logoutBtn" class="logout">Logout</button>
+        </div>
+
+        <!-- Caretaker -->
+        <h4>Caretaker Details</h4>
+        <form id="caretakerForm">
+          <input id="ctName" placeholder="Caretaker Name" required />
+          <input id="ctContact" placeholder="Caretaker Contact (Email/Phone)" required />
+          <button class="primary" type="submit">Save Caretaker</button>
+        </form>
+        <p class="small">Notification will be "sent" to caretaker if pill is missed.</p>
+
+        <hr>
+
+        <h4>Upload Prescription (QR)</h4>
+        <input id="qrInput" type="file" accept="image/*"/>
+        <p class="small">QR must contain JSON array of medicines.</p>
+
+        <hr>
+        <button id="loadDefault" class="primary">Load Default Prescription</button>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="card" id="rightPanel">
+      <div id="appContent" class="hidden">
+        <h3>Medicine Schedule</h3>
+        <form id="addMedForm">
+          <div style="display:grid;grid-template-columns:1fr 140px 110px;gap:8px">
+            <input id="medName" placeholder="Medicine name" required />
+            <input id="medDose" placeholder="Dose" required />
+            <input id="medTime" type="time" required />
+          </div>
+          <div style="margin-top:8px">
+            <button class="primary" type="submit">Add Medicine</button>
+          </div>
+        </form>
+
+        <div class="schedule-list" id="scheduleList"></div>
+
+        <h3 style="margin-top:18px">History</h3>
+        <table id="historyTable">
+          <thead><tr><th>Medicine</th><th>Time</th><th>Status</th><th>Recorded</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="small">Total: <span id="historyCount">0</span></div>
+
+        <!-- Buttons row -->
+        <div class="btn-row">
+          <button id="clearHistory" class="primary">Clear History</button>
+          <button id="saveData" class="primary">Save Data</button>
+        </div>
+      </div>
+
+      <div id="lockedPlaceholder" class="center">
+        <p>Please login to access the dashboard.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
+  <script>
+    const DEMO_USER="user", DEMO_PASS="1234";
+    const KEY_SCHEDULE="sma_schedule", KEY_HISTORY="sma_history", KEY_LOGGED="sma_logged", KEY_CT="sma_caretaker";
+
+    function loadSchedule(){return JSON.parse(localStorage.getItem(KEY_SCHEDULE)||"[]");}
+    function saveSchedule(d){localStorage.setItem(KEY_SCHEDULE,JSON.stringify(d));}
+    function loadHistory(){return JSON.parse(localStorage.getItem(KEY_HISTORY)||"[]");}
+    function saveHistory(d){localStorage.setItem(KEY_HISTORY,JSON.stringify(d));}
+    function loadCaretaker(){return JSON.parse(localStorage.getItem(KEY_CT)||"null");}
+    function saveCaretaker(d){localStorage.setItem(KEY_CT,JSON.stringify(d));}
+    function addHistory(r){let h=loadHistory();h.push(r);saveHistory(h);renderHistory();}
+
+    const loginForm=document.getElementById("loginForm");
+    const loginCard=document.getElementById("loginCard");
+    const controlsCard=document.getElementById("controlsCard");
+    const appContent=document.getElementById("appContent");
+    const lockedPlaceholder=document.getElementById("lockedPlaceholder");
+    const caretakerForm=document.getElementById("caretakerForm");
+
+    // Render schedule
+    function renderSchedule(){
+      const s=loadSchedule();
+      const list=document.getElementById("scheduleList");
+      list.innerHTML="";
+      if(s.length==0){list.innerHTML="<div class='small center'>No medicines</div>";return;}
+      s.forEach((m,i)=>{
+        const row=document.createElement("div");
+        row.className="med-row";
+        row.innerHTML=`
+          <div><div class="pill-badge">${m.name}</div><div class="small">${m.dose} - ${m.time}</div></div>
+          <div>
+            <button onclick="markTaken(${i})">✅</button>
+            <button onclick="markMissed(${i})">❌</button>
+            <button onclick="deleteMed(${i})">🗑</button>
+          </div>`;
+        list.appendChild(row);
+      });
+    }
+
+    // Render history
+    function renderHistory(){
+      const hist=loadHistory();
+      const tbody=document.querySelector("#historyTable tbody");
+      tbody.innerHTML="";
+      hist.slice().reverse().forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=<td>${r.name||"-"}</td><td>${r.time||"-"}</td><td>${r.status}</td><td>${r.recordedAt}</td>;
+        tbody.appendChild(tr);
+      });
+      document.getElementById("historyCount").textContent=hist.length;
+    }
+
+    // Actions
+    window.markTaken=function(i){
+      const s=loadSchedule();
+      const m=s[i];
+      addHistory({name:m.name,time:m.time,status:"Taken",recordedAt:new Date().toLocaleString()});
+    }
+    window.markMissed=function(i){
+      const s=loadSchedule();
+      const m=s[i];
+      addHistory({name:m.name,time:m.time,status:"Missed",recordedAt:new Date().toLocaleString()});
+      // Notify caretaker
+      const ct=loadCaretaker();
+      if(ct){
+        addHistory({name:"-",time:"-",status:Notification sent to ${ct.name} (${ct.contact}),recordedAt:new Date().toLocaleString()});
+        alert("Notification simulated to caretaker: "+ct.name+" ("+ct.contact+")");
+      }
+    }
+    window.deleteMed=function(i){
+      const s=loadSchedule();s.splice(i,1);saveSchedule(s);renderSchedule();
+    }
+
+    // Add med
+    document.getElementById("addMedForm").addEventListener("submit",e=>{
+      e.preventDefault();
+      const name=document.getElementById("medName").value.trim();
+      const dose=document.getElementById("medDose").value.trim();
+      const time=document.getElementById("medTime").value;
+      if(!name||!dose||!time)return;
+      let s=loadSchedule();s.push({name,dose,time});saveSchedule(s);renderSchedule();e.target.reset();
+    });
+
+    // Caretaker save
+    caretakerForm.addEventListener("submit",e=>{
+      e.preventDefault();
+      const ct={name:document.getElementById("ctName").value.trim(),contact:document.getElementById("ctContact").value.trim()};
+      saveCaretaker(ct);alert("Caretaker saved");e.target.reset();
+    });
+
+    // Load default
+    document.getElementById("loadDefault").addEventListener("click",()=>{
+      const def=[{name:"Paracetamol",dose:"1 Tablet",time:"09:00"},{name:"Vitamin C",dose:"2 Tablets",time:"20:00"}];
+      let s=loadSchedule();def.forEach(m=>s.push(m));saveSchedule(s);renderSchedule();
+    });
+
+    // Clear History
+    document.getElementById("clearHistory").addEventListener("click",()=>{
+      if(confirm("Are you sure you want to clear all history?")){
+        saveHistory([]);renderHistory();
+        alert("History cleared!");
+      }
+    });
+
+    // Save Data (manual trigger)
+    document.getElementById("saveData").addEventListener("click",()=>{
+      saveSchedule(loadSchedule());
+      saveHistory(loadHistory());
+      alert("Data saved successfully!");
+    });
+
+    // Login
+    loginForm.addEventListener("submit",e=>{
+      e.preventDefault();
+      const u=document.getElementById("username").value,p=document.getElementById("password").value;
+      if(u===DEMO_USER&&p===DEMO_PASS){showApp();}else alert("Invalid");
+    });
+    document.getElementById("logoutBtn").addEventListener("click",()=>hideApp());
+
+    function showApp(){loginCard.classList.add("hidden");controlsCard.classList.remove("hidden");appContent.classList.remove("hidden");lockedPlaceholder.classList.add("hidden");renderSchedule();renderHistory();}
+    function hideApp(){loginCard.classList.remove("hidden");controlsCard.classList.add("hidden");appContent.classList.add("hidden");lockedPlaceholder.classList.remove("hidden");}
+
+    hideApp(); // init
+  </script>
+</body>
+</html>
